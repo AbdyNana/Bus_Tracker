@@ -1,0 +1,92 @@
+# ==========================================
+# 🛑 SUB_Tracker — Global .gitignore
+# ==========================================
+
+# 1. Environment & Secrets (CRITICAL)
+# ==========================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.p12
+secret.json
+client_secret.json
+
+# 2. Python / Backend (FastAPI)
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+# Virtual Environments
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# 3. Flutter / Mobile (Dart)
+# ==========================================
+.dart_tool/
+build/
+.pub-cache/
+.pub/
+.flutter-plugins
+.flutter-plugins-dependencies
+# Exceptions to Dart/Flutter
+!mobile/generate_mocks.dart
+
+# 4. Node.js / Frontend (Vue/React/Vanilla)
+# ==========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store
+dist/
+dist-ssr/
+*.local
+
+# 5. IDEs, Editors & OS Files
+# ==========================================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# 6. Database / Local Storage
+# ==========================================
+*.sqlite3
+*.db
+
+# 7. AI & Assistant Caches
+# ==========================================
+.gemini/
+.cursor/
