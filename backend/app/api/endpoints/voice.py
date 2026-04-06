@@ -1,12 +1,11 @@
 """
 Endpoint: POST /api/process-voice
 Accepts audio file upload (any format: ogg, mp3, m4a, wav, flac).
-Runs STT via Agent 1 (The Ear), then routes to intent logic.
+Runs intent classification directly via Gemini 2.0 Flash multimodal without intermediate STT.
 """
 import logging
 import traceback
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from app.agents.ear import transcribe_audio
 from app.agents.brain import parse_intent
 from app.agents.bulldozer import search_contacts
 from app.db.supabase_client import get_supabase
@@ -18,7 +17,7 @@ logger = logging.getLogger(__name__)
 @router.post("/process-voice")
 async def process_voice(audio: UploadFile = File(...)):
     """
-    Full pipeline: Audio → STT → Intent → Action → JSON response.
+    Full pipeline: Audio → Gemini 2.0 Multimodal (STT+Intent) → Action → JSON response.
     Returns structured JSON matching /api/process-intent schema.
     """
     # --- Validation ---
@@ -34,42 +33,27 @@ async def process_voice(audio: UploadFile = File(...)):
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="Загруженный аудиофайл пустой.")
 
-    logger.info(f"Voice upload received: filename='{audio.filename}', size={len(audio_bytes)} bytes")
+    logger.info(f"Voice upload received: filename='{audio.filename}', content_type='{audio.content_type}', size={len(audio_bytes)} bytes")
 
-    # --- Agent 1: The Ear — STT ---
+    # --- Agent 2: The Brain — Multimodal Routing ---
     try:
-        text = transcribe_audio(audio_bytes, filename=audio.filename)
-    except RuntimeError as e:
-        # STT API error or audio conversion failure — detailed 503
-        logger.error(f"STT pipeline failed: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=503,
-            detail=str(e),
-        )
-    except Exception as e:
-        logger.error(f"Unexpected STT error: {e}\n{traceback.format_exc()}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Внутренняя ошибка STT: {e}",
-        )
-
-    if not text:
-        return {
-            "type": "error",
-            "transcribed_text": "",
-            "message": "Не удалось распознать речь. Говорите четче или повторите.",
-        }
-
-    logger.info(f"Proceeding with transcribed text: '{text}'")
-
-    # --- Agent 2: The Brain — Intent Routing ---
-    try:
-        intent = parse_intent(text)
+        mime_type = audio.content_type if audio.content_type else "audio/ogg"
+        intent = parse_intent(audio_bytes=audio_bytes, mime_type=mime_type)
     except Exception as e:
         logger.error(f"Brain (LLM) error: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Ошибка AI-обработки: {e}")
 
     intent_type = intent.get("type")
+    text = intent.get("transcribed_text", "")
+
+    if intent_type == "error":
+        return {
+            "type": "error",
+            "transcribed_text": text,
+            "message": intent.get("message", "Не удалось распознать речь или ошибка ИИ."),
+        }
+
+    logger.info(f"Parsed Multimodal Intent: type='{intent_type}', text='{text[:50]}'")
 
     # --- Scenario 1: Calendar Event ---
     if intent_type == "calendar_event":

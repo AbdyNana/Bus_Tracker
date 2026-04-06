@@ -1,11 +1,7 @@
-"""
-SUB_Tracker Backend — FastAPI Entry Point
-Executive AI Concierge for Bishkek entrepreneurs.
-"""
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.endpoints import voice, intent, tasks
+from app.api.endpoints import voice, intent, tasks, inventory, telegram_webhook, reports, advisor, finance
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,7 +28,11 @@ app.add_middleware(
 app.include_router(voice.router, prefix="/api", tags=["STT"])
 app.include_router(intent.router, prefix="/api", tags=["Intent"])
 app.include_router(tasks.router, prefix="/api", tags=["Calendar"])
-
+app.include_router(inventory.router, prefix="/api", tags=["Inventory"])
+app.include_router(telegram_webhook.router, prefix="/api", tags=["Telegram"])
+app.include_router(reports.router, prefix="/api", tags=["Reports"])
+app.include_router(advisor.router, prefix="/api", tags=["Advisor"])
+app.include_router(finance.router, prefix="/api", tags=["Finance"])
 
 @app.get("/", tags=["Health"])
 async def root():
